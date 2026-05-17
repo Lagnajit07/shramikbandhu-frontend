@@ -375,64 +375,82 @@ const AuthPage = ({ setUser }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      // Validate all fields
-      const phoneError = validatePhoneNumber(formData.phone);
-      const emailError = validateEmail(formData.email);
-      const passwordError = validatePassword(formData.password);
-      
-      if (phoneError) {
-        toast.error(phoneError);
-        setPhoneError(phoneError);
-        setLoading(false);
-        return;
-      }
-      
-      if (emailError) {
-        toast.error(emailError);
-        setEmailError(emailError);
-        setLoading(false);
-        return;
-      }
-      
-      if (passwordError) {
-        toast.error(passwordError);
-        setPasswordError(passwordError);
-        setLoading(false);
-        return;
-      }
-
-      if (!isLogin && !formData.name.trim()) {
-        toast.error('Please enter your name');
-        setLoading(false);
-        return;
-      }
-
-      const endpoint = isLogin ? `${API}/auth/login` : `${API}/auth/register`;
-      const payload = isLogin
-        ? { 
-            email: formData.email, 
-            password: formData.password,
-            phone: formData.phone 
-          }
-        : formData;
-
-      const response = await axios.post(endpoint, payload);
-      localStorage.setItem('token', response.data.token);
-      setUser(response.data.user);
-      toast.success(isLogin ? 'Login successful!' : 'Registration successful!');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Authentication failed');
-    } finally {
+  try {
+    // Validate all fields
+    const phoneError = validatePhoneNumber(formData.phone);
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    
+    if (phoneError) {
+      toast.error(phoneError);
+      setPhoneError(phoneError);
       setLoading(false);
+      return;
     }
-  };
+    
+    if (emailError) {
+      toast.error(emailError);
+      setEmailError(emailError);
+      setLoading(false);
+      return;
+    }
+    
+    if (passwordError) {
+      toast.error(passwordError);
+      setPasswordError(passwordError);
+      setLoading(false);
+      return;
+    }
 
+    if (!isLogin && !formData.name.trim()) {
+      toast.error('Please enter your name');
+      setLoading(false);
+      return;
+    }
+
+    const endpoint = isLogin ? `${API}/auth/login` : `${API}/auth/register`;
+    
+    // FIX: Create clean payload
+    let payload;
+    if (isLogin) {
+      payload = {
+        email: formData.email,
+        password: formData.password
+      };
+    } else {
+      // Registration: Only send these fields
+      payload = {
+        email: formData.email,
+        name: formData.name,
+        role: formData.role,
+        phone: formData.phone,
+        password: formData.password
+      };
+    }
+
+    console.log('Sending payload:', payload); // Debug: Check what's being sent
+
+    const response = await axios.post(endpoint, payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    localStorage.setItem('token', response.data.token);
+    setUser(response.data.user);
+    toast.success(isLogin ? 'Login successful!' : 'Registration successful!');
+    navigate('/dashboard');
+  } catch (error) {
+    console.error('Error details:', error.response?.data); // Debug: See actual error
+    toast.error(error.response?.data?.detail || 'Authentication failed');
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (showForgotPassword) {
   return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
